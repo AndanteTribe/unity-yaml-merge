@@ -11,8 +11,8 @@ public static class DockerHelper
 
     internal static async ValueTask<bool> RunMergeAsync(string dockerImage, string projectPath, MergeRequest request, CancellationToken cancellationToken = default)
     {
-        var absBase   = Path.GetFullPath(request.Base);
-        var absOurs   = Path.GetFullPath(request.Ours);
+        var absBase = Path.GetFullPath(request.Base);
+        var absOurs = Path.GetFullPath(request.Ours);
         var absTheirs = Path.GetFullPath(request.Theirs);
         var absOutput = Path.GetFullPath(request.Output);
 
@@ -35,7 +35,7 @@ public static class DockerHelper
                 CopyAsync(absOurs, Path.Combine(workDirectory, oursFileName), cancellationToken),
                 CopyAsync(absTheirs, Path.Combine(workDirectory, theirsFileName), cancellationToken)
             );
-            
+
             const string unityYamlMerge = "/opt/unity/Editor/Data/Tools/UnityYAMLMerge";
 
             var dockerArgs =
@@ -46,7 +46,7 @@ public static class DockerHelper
                 $"-v \"{absOutputDir}:/output\" " +
                 $"{dockerImage} " +
                 $"merge -p /merge/{baseFileName} /merge/{oursFileName} /merge/{theirsFileName} /output/{Path.GetFileName(absOutput)}";
-            
+
             return await RunAsync(dockerArgs, cancellationToken);
         }
         finally

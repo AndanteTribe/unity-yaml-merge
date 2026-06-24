@@ -18,7 +18,7 @@ public static class EnvironmentVariables
         } : VersionSource.Project;
         var unityVersion = variables.Contains(UnityVersion) ? variables[UnityVersion]?.ToString() ?? "" : "";
         var projectPath = variables.Contains(ProjectPath)
-            ? variables[ProjectPath]?.ToString()?? Path.GetFullPath(".")
+            ? variables[ProjectPath]?.ToString() ?? Path.GetFullPath(".")
             : Path.GetFullPath(".");
         ThrowHelper.ThrowIfMissingEnvironmentVariables(versionSource, unityVersion, projectPath);
         return (versionSource, unityVersion, projectPath);
