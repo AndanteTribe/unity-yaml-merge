@@ -9,7 +9,7 @@ public static class HttpClientExtensions
     private const int MaxRetryCount = 3;
     private const int TimeoutMilliSeconds = 5 * 60 * 1000; // 5 minutes
 
-    public static async Task<string> GetLatestLtsVersionAsync(this HttpClient httpClient, CancellationToken cancellationToken = default)
+    public static async Task<string> GetLatestLtsVersionAsync(this HttpClient httpClient, ReadOnlyMemory<string> excludeVersions = default, CancellationToken cancellationToken = default)
     {
         const string uri = "https://unity.com/releases/editor/lts-releases.xml";
 
@@ -49,7 +49,19 @@ public static class HttpClientExtensions
                     var version = link.AsSpan().TrimEnd('/');
                     version = version[(version.LastIndexOf('/') + 1)..];
 
-                    return version.ToString();
+                    var excluded = false;
+                    foreach (var excludeVersion in excludeVersions.Span)
+                    {
+                        if (version.SequenceEqual(excludeVersion.AsSpan()))
+                        {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (!excluded)
+                    {
+                        return version.ToString();
+                    }
                 }
             }
             catch (OperationCanceledException e) when (e.CancellationToken == timeoutTokenSource.Token)
