@@ -1,19 +1,22 @@
+using System.Buffers;
+
 namespace UnityYamlMerge.Core;
 
 public static class YamlMergeProcessor
 {
-    public static async ValueTask StartAsync(IReadOnlyList<MergeRequest> requests, HttpClient? httpClient = null, CancellationToken cancellationToken = default)
+    public static async ValueTask StartAsync(IReadOnlyList<MergeRequest> requests, CancellationToken cancellationToken = default)
     {
         ThrowHelper.ThrowIfInvalidArguments(requests);
         var (versionSource, unityVersion, projectPath) = EnvironmentVariables.Get();
-        httpClient ??= new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        using var httpClient = new HttpClient();
+        httpClient.Timeout = Timeout.InfiniteTimeSpan;
 
         try
         {
             unityVersion = versionSource switch
             {
                 VersionSource.Project => GetLocalUnityVersion(projectPath),
-                VersionSource.LatestLts => await httpClient.GetLatestLtsVersionAsync(cancellationToken),
+                VersionSource.LatestLts => await httpClient.GetLatestLtsVersionAsync(cancellationToken: cancellationToken),
                 _ => unityVersion,
             };
         }
@@ -27,7 +30,26 @@ public static class YamlMergeProcessor
 
         try
         {
-            if (!await DockerHelper.PullImageAsync(dockerImage, cancellationToken))
+            var pullSuccess = await DockerHelper.PullImageAsync(dockerImage, cancellationToken);
+            if (!pullSuccess && versionSource == VersionSource.LatestLts)
+            {
+                using var _ = ArrayPool<string>.Shared.Rent(4, out var excludeVersions);
+                excludeVersions.AsSpan().Fill("");
+                excludeVersions[0] = unityVersion;
+                for (var i = 1; i < excludeVersions.Length; i++)
+                {
+                    unityVersion = await httpClient.GetLatestLtsVersionAsync(excludeVersions, cancellationToken);
+                    dockerImage = "unityci/editor:" + unityVersion + "-base-3";
+                    pullSuccess = await DockerHelper.PullImageAsync(dockerImage, cancellationToken);
+                    if (pullSuccess)
+                    {
+                        break;
+                    }
+                    excludeVersions[i] = unityVersion;
+                }
+            }
+
+            if (!pullSuccess)
             {
                 ThrowHelper.ThrowFailPullDockerImage(dockerImage);
             }
