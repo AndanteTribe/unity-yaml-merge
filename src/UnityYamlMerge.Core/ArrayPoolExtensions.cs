@@ -20,6 +20,6 @@ internal static class ArrayPoolExtensions
         }
 
         /// <inheritdoc/>
-        void IDisposable.Dispose() => _pool.Return(_array);
+        void IDisposable.Dispose() => _pool.Return(_array, true);
     }
 }

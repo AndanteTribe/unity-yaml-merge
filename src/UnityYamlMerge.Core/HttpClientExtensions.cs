@@ -52,7 +52,7 @@ public static class HttpClientExtensions
                     var excluded = false;
                     foreach (var excludeVersion in excludeVersions.Span)
                     {
-                        if (version.SequenceEqual(excludeVersion.AsSpan()))
+                        if (!string.IsNullOrEmpty(excludeVersion) && version.SequenceEqual(excludeVersion.AsSpan()))
                         {
                             excluded = true;
                             break;

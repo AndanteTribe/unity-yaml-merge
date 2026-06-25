@@ -45,6 +45,7 @@ public static class YamlMergeProcessor
                     {
                         break;
                     }
+                    excludeVersions[i] = unityVersion;
                 }
             }
 
