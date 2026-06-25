@@ -14,9 +14,12 @@ concurrency:
 env:
   DOCKERFILE_PATH: src/UnityYamlMerge/Dockerfile
   DOCKER_REPOSITORY_NAME: andantetribe/unity-yaml-merge
+  DOCKER_USERNAME: andantetribe
+
 permissions:
   contents: read
   actions: write
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -43,7 +46,7 @@ jobs:
         # ghasec-ignore: unpinned-action
         uses: AndanteTribe/Actions/actions/docker-login-action@main # zizmor: ignore[unpinned-uses] repository-local action reference is intentionally tracked on @main
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ${{ env.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and push Docker image
