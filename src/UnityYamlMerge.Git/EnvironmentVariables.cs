@@ -9,7 +9,7 @@ public static class EnvironmentVariables
     {
         var variables = Environment.GetEnvironmentVariables();
         var targetExtensions = variables.Contains(TargetExtensions)
-            ? variables[TargetExtensions]?.ToString()?.Split(',') ?? ["unity", "prefab"]
+            ? variables[TargetExtensions]?.ToString()?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? ["unity", "prefab"]
             : ["unity", "prefab"];
         var baseBranch = variables.Contains(BaseBranch) ? variables[BaseBranch]?.ToString() ?? "" : "";
         return (targetExtensions, baseBranch);

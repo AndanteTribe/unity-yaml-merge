@@ -30,7 +30,7 @@ if (conflictFiles.Count == 0)
 // ours/theirs の共通祖先 (merge-base) を base として使う
 var mergeBase = await GitHelper.GetMergeBaseAsync(baseBranch, headBranch, cancellationTokenSource.Token);
 
-var tempDir = Path.GetRandomFileName();
+var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 Directory.CreateDirectory(tempDir);
 var requests = new ConcurrentQueue<MergeRequest>();
 
@@ -53,7 +53,11 @@ try
         {
             var oid = await GitHelper.GetBlobOidAsync(revision, filePath, cancellationToken);
 
-            if (!string.IsNullOrEmpty(oid))
+            if (string.IsNullOrEmpty(oid))
+            {
+                await File.WriteAllBytesAsync(outputPath, [], cancellationToken);
+            }
+            else
             {
                 await GitHelper.ExportBlobAsync(oid, outputPath, cancellationToken);
             }

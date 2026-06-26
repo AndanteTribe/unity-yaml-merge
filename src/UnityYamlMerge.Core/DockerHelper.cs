@@ -73,8 +73,9 @@ public static class DockerHelper
 
         static async ValueTask CopyAsync(string source, string destination, CancellationToken cancellationToken = default)
         {
-            var text = await File.ReadAllTextAsync(source, cancellationToken);
-            await File.WriteAllTextAsync(destination, text, cancellationToken);
+            await using var sourceStream = File.OpenRead(source);
+            await using var destinationStream = File.Create(destination);
+            await sourceStream.CopyToAsync(destinationStream, cancellationToken);
         }
     }
 }
