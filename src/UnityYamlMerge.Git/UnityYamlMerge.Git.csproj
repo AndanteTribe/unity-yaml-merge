@@ -6,10 +6,14 @@
         <LangVersion>14</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <SelfContained>true</SelfContained>
         <PublishAot>true</PublishAot>
         <RuntimeIdentifier>linux-musl-x64</RuntimeIdentifier>
-        <InvariantGlobalization>true</InvariantGlobalization>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <OptimizationPreference>Size</OptimizationPreference>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <StripSymbols>true</StripSymbols>
+        <StaticExecutable>true</StaticExecutable>
     </PropertyGroup>
 
     <ItemGroup>

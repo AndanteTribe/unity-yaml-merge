@@ -23,7 +23,7 @@ inputs:
     required: false
 runs:
   using: docker
-  image: docker://andantetribe/unity-yaml-merge-git:0.1.0-preview7
+  image: docker://andantetribe/unity-yaml-merge-git:0.1.0-preview8
   args:
     - ${{ inputs.auto-push-remote != '' && '--auto-push' || '' }}
     - ${{ inputs.auto-push-remote }}
