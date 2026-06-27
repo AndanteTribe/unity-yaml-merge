@@ -45,7 +45,7 @@ runs:
   steps:
     - name: Run UnityYAMLMerge
       id: run-merge
-      uses: AndanteTribe/unity-yaml-merge/actions/unity-yaml-merge-git@0.1.0-preview4
+      uses: AndanteTribe/unity-yaml-merge/actions/unity-yaml-merge-git@0.1.0-preview6
       with:
         auto-push-remote: ${{ inputs.auto-push == 'true' && format('https://x-access-token:{0}@github.com/{1}.git', inputs.github-token || github.token, github.repository) || '' }}
         base-branch: ${{ inputs.base-branch || ((github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && github.event.pull_request.base.ref) || github.event.repository.default_branch }}
