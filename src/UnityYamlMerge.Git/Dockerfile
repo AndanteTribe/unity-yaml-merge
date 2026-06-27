@@ -1,5 +1,5 @@
 ﻿FROM docker:28-cli@sha256:625d9431a9f54c5a2bc90f24f0e1c3d55b1349fd857dd85035f98c2c9acbdd4d AS base
-RUN apk add --no-cache git
+RUN apk add --no-cache git openssl libssl3
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:940f919ae84dd92ccd4aab7686fa5b777870b006c9360351039e16bcaad73d89 AS publish

@@ -62,7 +62,7 @@ try
             await ValueTaskEx.WhenAll(
                 ExportBlobIfExistsAsync(mergeBase, basePath, filePath, token),
                 ExportBlobIfExistsAsync(headBranch, oursPath, filePath, token),
-                ExportBlobIfExistsAsync(baseBranch, theirsPath, filePath, token)
+                ExportBlobIfExistsAsync(remoteBranch, theirsPath, filePath, token)
             );
 
             requests.Enqueue(new MergeRequest(basePath, oursPath, theirsPath, filePath));
