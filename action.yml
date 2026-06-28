@@ -55,7 +55,6 @@ runs:
       if: inputs.auto-push == 'true'
       shell: bash
       run: |
-        git config --global credential.helper store
         echo "https://x-access-token:${{ inputs.github-token || github.token }}@github.com" > ~/.git-credentials
         chmod 600 ~/.git-credentials
     - name: Run UnityYAMLMerge
@@ -66,6 +65,9 @@ runs:
           -w $GITHUB_WORKSPACE \
           -v /var/run/docker.sock:/var/run/docker.sock \
           -v $HOME/.git-credentials:/root/.git-credentials:ro \
+          -e GIT_CONFIG_COUNT=1 \
+          -e GIT_CONFIG_KEY_0=credential.helper \
+          -e GIT_CONFIG_VALUE_0=store \
           -e BASE_BRANCH \
           -e TARGET_EXTENSIONS \
           -e PROJECT_PATH \
