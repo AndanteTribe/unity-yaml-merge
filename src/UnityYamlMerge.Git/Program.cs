@@ -10,10 +10,9 @@ string? gitUserEmail = null;
 string? gitUserName = null;
 for (var i = 0; i < args.Length; i++)
 {
-    if (args[i] == "--auto-push" && i + 1 < args.Length)
+    if (args[i] == "--auto-push")
     {
-        autoPushRemote = args[i + 1];
-        i++;
+        autoPushRemote = "origin";
     }
     else if (args[i] == "--git-user-email" && i + 1 < args.Length)
     {

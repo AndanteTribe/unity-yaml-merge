@@ -51,6 +51,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Configure git credentials
+      if: inputs.auto-push == 'true'
+      shell: bash
+      run: |
+        git config --global credential.helper store
+        echo "https://x-access-token:${{ inputs.github-token || github.token }}@github.com" > ~/.git-credentials
+        chmod 600 ~/.git-credentials
     - name: Run UnityYAMLMerge
       shell: bash
       run: |
@@ -58,6 +65,7 @@ runs:
           -v $GITHUB_WORKSPACE:$GITHUB_WORKSPACE \
           -w $GITHUB_WORKSPACE \
           -v /var/run/docker.sock:/var/run/docker.sock \
+          -v $HOME/.git-credentials:/root/.git-credentials:ro \
           -e BASE_BRANCH \
           -e TARGET_EXTENSIONS \
           -e PROJECT_PATH \
@@ -65,7 +73,6 @@ runs:
           -e UNITY_VERSION \
           andantetribe/unity-yaml-merge-git:latest \
           ${{ inputs.auto-push == 'true' && '--auto-push' || '' }} \
-          ${{ inputs.auto-push == 'true' && format('https://x-access-token:{0}@github.com/{1}.git', inputs.github-token || github.token, github.repository) || '' }} \
           --git-user-email "${{ inputs.git-user-email }}" \
           --git-user-name "${{ inputs.git-user-name }}"
       env:
