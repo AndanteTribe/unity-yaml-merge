@@ -33,26 +33,29 @@ public static class GitHelper
             return;
         }
 
-        var emailInfo = ProcessStartInfo.Create("git");
-        emailInfo.ArgumentList.Add("config");
-        emailInfo.ArgumentList.Add("--global");
-        emailInfo.ArgumentList.Add("user.email");
-        emailInfo.ArgumentList.Add(gitUserEmail);
-
-        var nameInfo = ProcessStartInfo.Create("git");
-        nameInfo.ArgumentList.Add("config");
-        nameInfo.ArgumentList.Add("--global");
-        nameInfo.ArgumentList.Add("user.name");
-        nameInfo.ArgumentList.Add(gitUserName);
+        var processStartInfo = ProcessStartInfo.Create("git");
+        processStartInfo.ArgumentList.Add("config");
+        processStartInfo.ArgumentList.Add("--global");
+        processStartInfo.ArgumentList.Add("user.email");
+        processStartInfo.ArgumentList.Add(gitUserEmail);
 
         var output = new ConcurrentQueue<string>();
-        var (emailExitCode, nameExitCode) = await ValueTaskEx.WhenAll(
-            Process.StartAsync(emailInfo, output, cancellationToken),
-            Process.StartAsync(nameInfo, output, cancellationToken)
-        );
-        if (emailExitCode != 0 || nameExitCode != 0)
+        var exitCode = await Process.StartAsync(processStartInfo, output, cancellationToken);
+        if (exitCode != 0)
         {
-            ThrowGitFailed(emailExitCode != 0 ? emailExitCode : nameExitCode, output);
+            ThrowGitFailed(exitCode, output);
+        }
+        output.Clear();
+
+        processStartInfo = ProcessStartInfo.Create("git");
+        processStartInfo.ArgumentList.Add("config");
+        processStartInfo.ArgumentList.Add("--global");
+        processStartInfo.ArgumentList.Add("user.name");
+        processStartInfo.ArgumentList.Add(gitUserName);
+        exitCode = await Process.StartAsync(processStartInfo, output, cancellationToken);
+        if (exitCode != 0)
+        {
+            ThrowGitFailed(exitCode, output);
         }
     }
 

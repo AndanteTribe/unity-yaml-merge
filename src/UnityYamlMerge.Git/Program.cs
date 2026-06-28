@@ -37,11 +37,8 @@ Console.CancelKeyPress += (_, e) =>
 
 try
 {
-    await ValueTaskEx.WhenAll(
-        GitHelper.SetConfigSafeDirectoryAsync(cancellationTokenSource.Token),
-        GitHelper.SetConfigUserAsync(gitUserEmail, gitUserName, cancellationTokenSource.Token)
-    );
-
+    await GitHelper.SetConfigUserAsync(gitUserEmail, gitUserName, cancellationTokenSource.Token);
+    await GitHelper.SetConfigSafeDirectoryAsync(cancellationTokenSource.Token);
     if (string.IsNullOrEmpty(baseBranch))
     {
         baseBranch = await GitHelper.GetDefaultBranchAsync(cancellationTokenSource.Token);
