@@ -64,6 +64,8 @@ try
         Environment.Exit(0);
     }
 
+    Console.WriteLine($"Found {allConflictFiles.Count} conflicted files: {string.Join(", ", allConflictFiles)}");
+    Console.WriteLine($"Found {conflictedTargetFiles.Count} conflicted files with target extensions: {string.Join(", ", conflictedTargetFiles)}");
     var canFullyResolve = allConflictFiles.Count == conflictedTargetFiles.Count;
 
     // Use the common ancestor (merge-base) of ours/theirs as base
