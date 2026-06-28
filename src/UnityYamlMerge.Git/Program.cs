@@ -49,13 +49,23 @@ try
 
     // Detect conflicts when merging headBranch (HEAD) into remoteBranch (e.g., main)
     const string headBranch = "HEAD";
-    var conflictFiles = await GitHelper.GetConflictedFilePathsAsync(remoteBranch, headBranch, targetExtensions, cancellationTokenSource.Token);
+    var allConflictFiles = await GitHelper.GetConflictedFilePathsAsync(remoteBranch, headBranch, cancellationToken: cancellationTokenSource.Token);
 
-    if (conflictFiles.Count == 0)
+    if (allConflictFiles.Count == 0)
+    {
+        Console.WriteLine("No conflicts found.");
+        Environment.Exit(0);
+    }
+
+    var conflictedTargetFiles = GetConflictedTargetFiles(allConflictFiles, targetExtensions);
+
+    if (conflictedTargetFiles.Count == 0)
     {
         Console.WriteLine("No conflicts found in target extensions.");
         Environment.Exit(0);
     }
+
+    var canFullyResolve = allConflictFiles.Count == conflictedTargetFiles.Count;
 
     // Use the common ancestor (merge-base) of ours/theirs as base
     var mergeBase = await GitHelper.GetMergeBaseAsync(remoteBranch, headBranch, cancellationTokenSource.Token);
@@ -66,7 +76,7 @@ try
 
     try
     {
-        await Parallel.ForEachAsync(conflictFiles, cancellationTokenSource.Token, async (filePath, token) =>
+        await Parallel.ForEachAsync(conflictedTargetFiles, cancellationTokenSource.Token, async (filePath, token) =>
         {
             var (basePath, oursPath, theirsPath) = GetThreeWayPaths(filePath, tempDir);
 
@@ -113,18 +123,40 @@ try
         if (!string.IsNullOrEmpty(autoPushRemote))
         {
             Console.WriteLine("Auto-pushing to remote");
-            await GitHelper.AddAsync(resolvedFiles, cancellationTokenSource.Token);
-            Console.WriteLine("Added resolved files to staging");
-
             var message = """
                           Auto-resolve merge conflicts using unity-yaml-merge
 
                           # Resolved conflicts
                           -
-                          """;
-            message += string.Join(Environment.NewLine + "- ", resolvedFiles);
-            await GitHelper.CommitAsync(message, cancellationTokenSource.Token);
-            Console.WriteLine("Committed resolved files");
+                          """ + string.Join(Environment.NewLine + "- ", resolvedFiles);
+
+            if (canFullyResolve && resolvedFiles.Count == allConflictFiles.Count)
+            {
+                // all conflicts resolved
+                await GitHelper.MergeAsync(remoteBranch, cancellationTokenSource.Token);
+                Console.WriteLine("Merge started");
+                await GitHelper.AddAsync(resolvedFiles, cancellationTokenSource.Token);
+                Console.WriteLine("Added resolved files to staging");
+                try
+                {
+                    await GitHelper.MergeContinueAsync(cancellationTokenSource.Token);
+                    Console.WriteLine("Merge completed");
+                }
+                catch
+                {
+                    await GitHelper.MergeAbortAsync(cancellationTokenSource.Token);
+                    throw;
+                }
+            }
+            else
+            {
+                // partial resolution, commit and push
+                await GitHelper.AddAsync(resolvedFiles, cancellationTokenSource.Token);
+                Console.WriteLine("Added resolved files to staging");
+
+                await GitHelper.CommitAsync(message, cancellationTokenSource.Token);
+                Console.WriteLine("Committed resolved files");
+            }
 
             await GitHelper.PushAsync(autoPushRemote, cancellationToken: cancellationTokenSource.Token);
             Console.WriteLine("Successfully pushed resolved files to remote");
@@ -155,4 +187,23 @@ static (string, string, string) GetThreeWayPaths(ReadOnlySpan<char> filePath, st
     var oursPath = Path.Combine(fileDir, $"ours_{fileName}");
     var theirsPath = Path.Combine(fileDir, $"theirs_{fileName}");
     return (basePath, oursPath, theirsPath);
+}
+
+static IReadOnlyList<string> GetConflictedTargetFiles(IReadOnlyList<string> allConflictFiles, ReadOnlySpan<string> targetExtensions)
+{
+    var conflictedTargetFiles = new List<string>();
+    for (var i = 0; i < allConflictFiles.Count; i++)
+    {
+        var file = allConflictFiles[i];
+        foreach (var targetExtension in targetExtensions)
+        {
+            var extension = Path.GetExtension(file.AsSpan()).TrimStart('.');
+            if (targetExtension.AsSpan().SequenceEqual(extension))
+            {
+                conflictedTargetFiles.Add(file);
+                break;
+            }
+        }
+    }
+    return conflictedTargetFiles;
 }

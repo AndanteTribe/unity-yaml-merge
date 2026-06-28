@@ -131,7 +131,7 @@ public static class GitHelper
     /// Detects conflicts when merging targetBranch (PR source, HEAD) into baseBranch (PR target, e.g., main).
     /// </summary>
     public static async ValueTask<IReadOnlyList<string>> GetConflictedFilePathsAsync(
-        string baseBranch, string headBranch, string[] targetExtensions, CancellationToken cancellationToken = default)
+        string baseBranch, string headBranch, ReadOnlyMemory<string> targetExtensions = default, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         // exit code 0 = clean merge, 1 = conflicts exist, other = error
@@ -169,7 +169,7 @@ public static class GitHelper
             }
 
             var ext = Path.GetExtension(line).TrimStart('.');
-            foreach (var targetExtension in targetExtensions.AsSpan())
+            foreach (var targetExtension in targetExtensions.Span)
             {
                 if (targetExtension.AsSpan().SequenceEqual(ext))
                 {
@@ -196,6 +196,53 @@ public static class GitHelper
             ThrowGitFailed(exitCode, output);
         }
         return output.TryDequeue(out var line) ? line.Trim() : throw new InvalidOperationException("Could not determine merge base.");
+    }
+
+    public static async ValueTask MergeAsync(string branch, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var processStartInfo = ProcessStartInfo.Create("git");
+        processStartInfo.ArgumentList.Add("merge");
+        processStartInfo.ArgumentList.Add("--no-edit");
+        processStartInfo.ArgumentList.Add(branch);
+
+        var output = new ConcurrentQueue<string>();
+        var exitCode = await Process.StartAsync(processStartInfo, output, cancellationToken);
+        if (exitCode != 0 && exitCode != 1)
+        {
+            ThrowGitFailed(exitCode, output);
+        }
+    }
+
+    public static async ValueTask MergeContinueAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var processStartInfo = ProcessStartInfo.Create("git");
+        processStartInfo.ArgumentList.Add("merge");
+        processStartInfo.ArgumentList.Add("--continue");
+        processStartInfo.ArgumentList.Add("--no-edit");
+
+        var output = new ConcurrentQueue<string>();
+        var exitCode = await Process.StartAsync(processStartInfo, output, cancellationToken);
+        if (exitCode != 0)
+        {
+            ThrowGitFailed(exitCode, output);
+        }
+    }
+
+    public static async ValueTask MergeAbortAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var processStartInfo = ProcessStartInfo.Create("git");
+        processStartInfo.ArgumentList.Add("merge");
+        processStartInfo.ArgumentList.Add("--abort");
+
+        var output = new ConcurrentQueue<string>();
+        var exitCode = await Process.StartAsync(processStartInfo, output, cancellationToken);
+        if (exitCode != 0)
+        {
+            ThrowGitFailed(exitCode, output);
+        }
     }
 
     public static async ValueTask<bool> GetIsShallowAsync(CancellationToken cancellationToken = default)
