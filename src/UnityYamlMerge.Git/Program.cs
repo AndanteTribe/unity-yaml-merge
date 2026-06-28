@@ -75,15 +75,23 @@ try
 
     try
     {
+        if (canFullyResolve && !string.IsNullOrEmpty(autoPushRemote))
+        {
+            await GitHelper.MergeAsync(remoteBranch, cancellationTokenSource.Token);
+            Console.WriteLine("Merge started");
+        }
+
         await Parallel.ForEachAsync(conflictedTargetFiles, cancellationTokenSource.Token, async (filePath, token) =>
         {
             var (basePath, oursPath, theirsPath) = GetThreeWayPaths(filePath, tempDir);
+            var oursRevision = canFullyResolve ? "ORIG_HEAD" : headBranch;
+            var theirsRevision = canFullyResolve ? "MERGE_HEAD" : remoteBranch;
 
             // base = common ancestor, ours = HEAD (PR source), theirs = baseBranch (PR target)
             await ValueTaskEx.WhenAll(
                 ExportBlobIfExistsAsync(mergeBase, basePath, filePath, token),
-                ExportBlobIfExistsAsync(headBranch, oursPath, filePath, token),
-                ExportBlobIfExistsAsync(remoteBranch, theirsPath, filePath, token)
+                ExportBlobIfExistsAsync(oursRevision, oursPath, filePath, token),
+                ExportBlobIfExistsAsync(theirsRevision, theirsPath, filePath, token)
             );
 
             requests.Enqueue(new MergeRequest(basePath, oursPath, theirsPath, filePath));
@@ -102,12 +110,6 @@ try
                 }
             }
         });
-
-        if (canFullyResolve && !string.IsNullOrEmpty(autoPushRemote))
-        {
-            await GitHelper.MergeAsync(remoteBranch, cancellationTokenSource.Token);
-            Console.WriteLine("Merge started");
-        }
 
         var resolvedFiles = await YamlMergeProcessor.StartAsync(requests, cancellationTokenSource.Token);
 
