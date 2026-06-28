@@ -6,12 +6,24 @@ using EnvironmentVariables = UnityYamlMerge.Git.EnvironmentVariables;
 
 // Parse command line arguments
 string? autoPushRemote = null;
+string? gitUserEmail = null;
+string? gitUserName = null;
 for (var i = 0; i < args.Length; i++)
 {
     if (args[i] == "--auto-push" && i + 1 < args.Length)
     {
         autoPushRemote = args[i + 1];
-        break;
+        i++;
+    }
+    else if (args[i] == "--git-user-email" && i + 1 < args.Length)
+    {
+        gitUserEmail = args[i + 1];
+        i++;
+    }
+    else if (args[i] == "--git-user-name" && i + 1 < args.Length)
+    {
+        gitUserName = args[i + 1];
+        i++;
     }
 }
 
@@ -25,7 +37,10 @@ Console.CancelKeyPress += (_, e) =>
 
 try
 {
-    await GitHelper.SetConfigSafeDirectoryAsync(cancellationTokenSource.Token);
+    await ValueTaskEx.WhenAll(
+        GitHelper.SetConfigSafeDirectoryAsync(cancellationTokenSource.Token),
+        GitHelper.SetConfigUserAsync(gitUserEmail, gitUserName, cancellationTokenSource.Token)
+    );
 
     if (string.IsNullOrEmpty(baseBranch))
     {

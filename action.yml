@@ -7,6 +7,14 @@ inputs:
     description: "Whether to automatically push resolved files back to the repository. Set to 'true' to enable auto-push. Requires github-token with contents: write permission."
     required: false
     default: "true"
+  git-user-email:
+      description: "Email address used for git commits when auto-push is enabled."
+      required: false
+      default: "41898282+github-actions[bot]@users.noreply.github.com"
+  git-user-name:
+      description: "User name used for git commits when auto-push is enabled."
+      required: false
+      default: "github-actions[bot]"
   github-token:
     description: "GitHub token used for API calls and pushing resolved files. Defaults to the built-in GITHUB_TOKEN. The token must have contents: write permission."
     required: false
@@ -57,7 +65,9 @@ runs:
           -e UNITY_VERSION \
           andantetribe/unity-yaml-merge-git:latest \
           ${{ inputs.auto-push == 'true' && '--auto-push' || '' }} \
-          ${{ inputs.auto-push == 'true' && format('https://x-access-token:{0}@github.com/{1}.git', inputs.github-token || github.token, github.repository) || '' }}
+          ${{ inputs.auto-push == 'true' && format('https://x-access-token:{0}@github.com/{1}.git', inputs.github-token || github.token, github.repository) || '' }} \
+          --git-user-email "${{ inputs.git-user-email }}" \
+          --git-user-name "${{ inputs.git-user-name }}"
       env:
         BASE_BRANCH: ${{ inputs.base-branch || github.event.pull_request.base.ref || github.event.repository.default_branch }}
         TARGET_EXTENSIONS: ${{ inputs.target-extensions }}

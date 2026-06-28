@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using UnityYamlMerge.Core;
+using ValueTaskSupplement;
 
 namespace UnityYamlMerge.Git;
 
@@ -21,6 +22,37 @@ public static class GitHelper
         if (exitCode != 0)
         {
             ThrowGitFailed(exitCode, output);
+        }
+    }
+
+    public static async ValueTask SetConfigUserAsync(string? gitUserEmail, string? gitUserName, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(gitUserEmail) || string.IsNullOrWhiteSpace(gitUserName))
+        {
+            return;
+        }
+
+        var emailInfo = ProcessStartInfo.Create("git");
+        emailInfo.ArgumentList.Add("config");
+        emailInfo.ArgumentList.Add("--global");
+        emailInfo.ArgumentList.Add("user.email");
+        emailInfo.ArgumentList.Add(gitUserEmail);
+
+        var nameInfo = ProcessStartInfo.Create("git");
+        nameInfo.ArgumentList.Add("config");
+        nameInfo.ArgumentList.Add("--global");
+        nameInfo.ArgumentList.Add("user.name");
+        nameInfo.ArgumentList.Add(gitUserName);
+
+        var output = new ConcurrentQueue<string>();
+        var (emailExitCode, nameExitCode) = await ValueTaskEx.WhenAll(
+            Process.StartAsync(emailInfo, output, cancellationToken),
+            Process.StartAsync(nameInfo, output, cancellationToken)
+        );
+        if (emailExitCode != 0 || nameExitCode != 0)
+        {
+            ThrowGitFailed(emailExitCode != 0 ? emailExitCode : nameExitCode, output);
         }
     }
 
