@@ -209,7 +209,6 @@ public static class GitHelper
         var processStartInfo = ProcessStartInfo.Create("git");
         processStartInfo.ArgumentList.Add("merge");
         processStartInfo.ArgumentList.Add("--continue");
-        processStartInfo.ArgumentList.Add("--no-edit");
 
         var output = new ConcurrentQueue<string>();
         var exitCode = await Process.StartAsync(processStartInfo, output, cancellationToken);
