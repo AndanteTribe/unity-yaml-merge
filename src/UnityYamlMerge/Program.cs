@@ -1,24 +1,50 @@
+using ConsoleAppFramework;
 using UnityYamlMerge.Core;
 
-if (args.Length == 0)
-{
-    Console.WriteLine("No merge requests provided. Exiting.");
-    Environment.Exit(0);
-}
+await ConsoleApp.RunAsync(args, RunAsync);
 
-// arguments: <base1> <ours1> <theirs1> <output1> [<base2> <ours2> <theirs2> <output2> ...]
-if (args.Length % 4 != 0)
+static async Task RunAsync(
+    string projectPath = ".",
+    string unityVersionSource = "project",
+    string unityVersion = "",
+    CancellationToken cancellationToken = default,
+    params string[] files)
 {
-    Console.Error.WriteLine("Usage: UnityYamlMerge <base> <ours> <theirs> <output> [...]");
-    Console.Error.WriteLine("Arguments must be provided in sets of 4.");
-    Environment.Exit(1);
-}
+    try
+    {
+        if (files.Length == 0)
+        {
+            Console.WriteLine("No merge requests provided. Exiting.");
+            return;
+        }
 
-var requests = new List<MergeRequest>(args.Length / 4);
-for (var i = 0; i < args.Length; i += 4)
-{
-    requests.Add(new MergeRequest(args[i], args[i + 1], args[i + 2], args[i + 3]));
-}
+        // arguments: <base1> <ours1> <theirs1> <output1> [<base2> <ours2> <theirs2> <output2> ...]
+        if (files.Length % 4 != 0)
+        {
+            throw new InvalidOperationException("""
+                Usage: UnityYamlMerge <base> <ours> <theirs> <output> [...]
+                Arguments must be provided in sets of 4.
+                """);
+        }
 
-using var cancellationTokenSource = new CancellationTokenSource();
-await YamlMergeProcessor.StartAsync(requests, cancellationTokenSource.Token);
+        var requests = new List<MergeRequest>(files.Length / 4);
+        for (var i = 0; i < files.Length; i += 4)
+        {
+            requests.Add(new MergeRequest(files[i], files[i + 1], files[i + 2], files[i + 3]));
+        }
+
+        var options = new YamlMergeOptions
+        {
+            VersionSource = YamlMergeOptions.ParseVersionSource(unityVersionSource),
+            UnityVersion = unityVersion,
+            ProjectPath = Path.GetFullPath(projectPath)
+        };
+
+        await YamlMergeProcessor.StartAsync(requests, options, cancellationToken);
+    }
+    catch (Exception e) when (e is not OperationCanceledException)
+    {
+        Console.Error.WriteLine(e.Message);
+        Environment.ExitCode = 1;
+    }
+}

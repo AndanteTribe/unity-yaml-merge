@@ -1,4 +1,4 @@
-﻿name: "Unity YAML Merge"
+name: "Unity YAML Merge"
 author: "AndanteTribe"
 description: "A tool to execute YamlMerge for resolving and merging Unity YAML files."
 
@@ -28,9 +28,9 @@ inputs:
     required: false
     default: ""
   target-extensions:
-    description: "Comma-separated list of file extensions to check for conflicts. Only files matching these extensions are passed to UnityYAMLMerge. Defaults to unity and prefab, as recommended by the Unity documentation."
+    description: "Space-separated list of file extensions to check for conflicts. Only files matching these extensions are passed to UnityYAMLMerge. Defaults to unity and prefab, as recommended by the Unity documentation."
     required: false
-    default: "unity,prefab"
+    default: "unity prefab"
   project-path:
     description: "Path to the Unity project root, relative to the repository root. Used to locate ProjectSettings/ProjectVersion.txt when unity-version-source is project."
     required: false
@@ -68,21 +68,15 @@ runs:
           -e GIT_CONFIG_COUNT=1 \
           -e GIT_CONFIG_KEY_0=credential.helper \
           -e GIT_CONFIG_VALUE_0=store \
-          -e BASE_BRANCH \
-          -e TARGET_EXTENSIONS \
-          -e PROJECT_PATH \
-          -e UNITY_VERSION_SOURCE \
-          -e UNITY_VERSION \
           andantetribe/unity-yaml-merge-git:latest \
           ${{ inputs.auto-push == 'true' && '--auto-push' || '' }} \
           --git-user-email "${{ inputs.git-user-email }}" \
-          --git-user-name "${{ inputs.git-user-name }}"
-      env:
-        BASE_BRANCH: ${{ inputs.base-branch || github.event.pull_request.base.ref || github.event.repository.default_branch }}
-        TARGET_EXTENSIONS: ${{ inputs.target-extensions }}
-        PROJECT_PATH: ${{ inputs.project-path }}
-        UNITY_VERSION_SOURCE: ${{ inputs.unity-version-source }}
-        UNITY_VERSION: ${{ inputs.unity-version }}
+          --git-user-name "${{ inputs.git-user-name }}" \
+          --base-branch "${{ inputs.base-branch || github.event.pull_request.base.ref || github.event.repository.default_branch }}" \
+          --target-extensions ${{ inputs.target-extensions }} \
+          --project-path "${{ inputs.project-path }}" \
+          --unity-version-source "${{ inputs.unity-version-source }}" \
+          --unity-version "${{ inputs.unity-version }}"
 
 branding:
     icon: "git-merge"

@@ -2,97 +2,76 @@ namespace UnityYamlMerge.Core;
 
 public static class ThrowHelper
 {
-    public static void ThrowIfMissingEnvironmentVariables(VersionSource versionSource, string unityVersion, string projectPath)
+    public static void ThrowIfInvalidOptions(YamlMergeOptions options)
     {
-        var hasError = false;
-        if (versionSource == VersionSource.Invalid)
+        var errors = new List<string>();
+        if (options.VersionSource == VersionSource.Invalid)
         {
-            Console.Error.WriteLine($"{EnvironmentVariables.UnityVersionSource} is not set or invalid. Set `{EnvironmentVariables.UnityVersionSource}` to one of the following values: `project`, `latest-lts`, or `manual`.");
-            hasError = true;
+            errors.Add("Unity version source is not set or invalid. Set it to one of the following values: `project`, `latest-lts`, or `manual`.");
         }
-        if (versionSource == VersionSource.Manual && string.IsNullOrEmpty(unityVersion))
+        if (options.VersionSource == VersionSource.Manual && string.IsNullOrEmpty(options.UnityVersion))
         {
-            Console.Error.WriteLine($"{EnvironmentVariables.UnityVersion} is not set. Set `{EnvironmentVariables.UnityVersion}` to the desired Unity version when `{EnvironmentVariables.UnityVersionSource}` is set to `manual`.");
-            hasError = true;
+            errors.Add("Unity version is not set. Set it to the desired Unity version when version source is set to `manual`.");
         }
-        if (string.IsNullOrEmpty(projectPath))
+        if (string.IsNullOrEmpty(options.ProjectPath))
         {
-            Console.Error.WriteLine($"{EnvironmentVariables.ProjectPath} is not set.");
-            hasError = true;
+            errors.Add("Project path is not set.");
         }
         else
         {
-            if (!Directory.Exists(projectPath))
+            if (!Directory.Exists(options.ProjectPath))
             {
-                Console.Error.WriteLine($"{EnvironmentVariables.ProjectPath} '{projectPath}' does not exist.");
-                hasError = true;
+                errors.Add($"Project path '{options.ProjectPath}' does not exist.");
             }
-            if (versionSource == VersionSource.Project && !File.Exists(Path.Combine(projectPath, "ProjectSettings", "ProjectVersion.txt")))
+            if (options.VersionSource == VersionSource.Project && !File.Exists(Path.Combine(options.ProjectPath, "ProjectSettings", "ProjectVersion.txt")))
             {
-                Console.Error.WriteLine($"{EnvironmentVariables.ProjectPath} '{projectPath}' is missing ProjectVersion.txt.");
-                hasError = true;
+                errors.Add($"Project path '{options.ProjectPath}' is missing ProjectVersion.txt.");
             }
         }
 
-        if (hasError)
+        if (errors.Count != 0)
         {
-            Environment.Exit(1);
+            throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
         }
     }
 
     public static void ThrowIfInvalidArguments(IReadOnlyCollection<MergeRequest> requests)
     {
-        var hasError = 0;
+        var errors = new System.Collections.Concurrent.ConcurrentQueue<string>();
         Parallel.ForEach(requests, request =>
         {
             if (!File.Exists(request.Base))
             {
-                Console.Error.WriteLine($"Base file '{request.Base}' does not exist.");
-                Interlocked.Exchange(ref hasError, 1);
+                errors.Enqueue($"Base file '{request.Base}' does not exist.");
             }
             if (!File.Exists(request.Ours))
             {
-                Console.Error.WriteLine($"Ours file '{request.Ours}' does not exist.");
-                Interlocked.Exchange(ref hasError, 1);
+                errors.Enqueue($"Ours file '{request.Ours}' does not exist.");
             }
             if (!File.Exists(request.Theirs))
             {
-                Console.Error.WriteLine($"Theirs file '{request.Theirs}' does not exist.");
-                Interlocked.Exchange(ref hasError, 1);
+                errors.Enqueue($"Theirs file '{request.Theirs}' does not exist.");
             }
         });
 
-        if (hasError != 0)
+        if (!errors.IsEmpty)
         {
-            Environment.Exit(1);
+            throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
         }
     }
 
     public static void ThrowFailGetVersion()
     {
-        Console.Error.WriteLine("Failed to get Unity version from project.");
-        Environment.Exit(1);
+        throw new InvalidOperationException("Failed to get Unity version from project.");
     }
 
     public static void ThrowInvalidUnityVersion(string unityVersion)
     {
-        Console.Error.WriteLine("Invalid Unity version: " + unityVersion);
-        Environment.Exit(1);
-    }
-
-    public static void ThrowException(Exception e)
-    {
-        if (e is OperationCanceledException)
-        {
-            throw e;
-        }
-        Console.Error.WriteLine(e.Message);
-        Environment.Exit(1);
+        throw new InvalidOperationException("Invalid Unity version: " + unityVersion);
     }
 
     public static void ThrowFailPullDockerImage(string dockerImage)
     {
-        Console.Error.WriteLine("Failed to pull Docker image: " + dockerImage);
-        Environment.Exit(1);
+        throw new InvalidOperationException("Failed to pull Docker image: " + dockerImage);
     }
 }

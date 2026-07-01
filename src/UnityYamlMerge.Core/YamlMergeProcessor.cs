@@ -4,75 +4,61 @@ namespace UnityYamlMerge.Core;
 
 public static class YamlMergeProcessor
 {
-    public static async ValueTask<IReadOnlyCollection<string>> StartAsync(IReadOnlyCollection<MergeRequest> requests, CancellationToken cancellationToken = default)
+    public static async ValueTask<IReadOnlyCollection<string>> StartAsync(IReadOnlyCollection<MergeRequest> requests, YamlMergeOptions options, CancellationToken cancellationToken = default)
     {
         ThrowHelper.ThrowIfInvalidArguments(requests);
-        var (versionSource, unityVersion, projectPath) = EnvironmentVariables.Get();
+        ThrowHelper.ThrowIfInvalidOptions(options);
+        var versionSource = options.VersionSource;
+        var unityVersion = options.UnityVersion;
+        var projectPath = options.ProjectPath;
         using var httpClient = new HttpClient();
         httpClient.Timeout = Timeout.InfiniteTimeSpan;
 
-        try
+        unityVersion = versionSource switch
         {
-            unityVersion = versionSource switch
-            {
-                VersionSource.Project => GetLocalUnityVersion(projectPath),
-                VersionSource.LatestLts => await httpClient.GetLatestLtsVersionAsync(cancellationToken: cancellationToken),
-                _ => unityVersion,
-            };
-        }
-        catch (Exception e)
-        {
-            ThrowHelper.ThrowException(e);
-        }
+            VersionSource.Project => GetLocalUnityVersion(projectPath),
+            VersionSource.LatestLts => await httpClient.GetLatestLtsVersionAsync(cancellationToken: cancellationToken),
+            _ => unityVersion,
+        };
         await ValidateUnityVersionAsync(versionSource, unityVersion, httpClient, cancellationToken);
 
         var dockerImage = "unityci/editor:" + unityVersion + "-base-3";
-
-        try
+        var pullSuccess = await DockerHelper.PullImageAsync(dockerImage, cancellationToken);
+        if (!pullSuccess && versionSource == VersionSource.LatestLts)
         {
-            var pullSuccess = await DockerHelper.PullImageAsync(dockerImage, cancellationToken);
-            if (!pullSuccess && versionSource == VersionSource.LatestLts)
+            using var _ = ArrayPool<string>.Shared.Rent(4, out var excludeVersions);
+            excludeVersions.AsSpan().Fill("");
+            excludeVersions[0] = unityVersion;
+            for (var i = 1; i < excludeVersions.Length; i++)
             {
-                using var _ = ArrayPool<string>.Shared.Rent(4, out var excludeVersions);
-                excludeVersions.AsSpan().Fill("");
-                excludeVersions[0] = unityVersion;
-                for (var i = 1; i < excludeVersions.Length; i++)
+                unityVersion = await httpClient.GetLatestLtsVersionAsync(excludeVersions, cancellationToken);
+                dockerImage = "unityci/editor:" + unityVersion + "-base-3";
+                pullSuccess = await DockerHelper.PullImageAsync(dockerImage, cancellationToken);
+                if (pullSuccess)
                 {
-                    unityVersion = await httpClient.GetLatestLtsVersionAsync(excludeVersions, cancellationToken);
-                    dockerImage = "unityci/editor:" + unityVersion + "-base-3";
-                    pullSuccess = await DockerHelper.PullImageAsync(dockerImage, cancellationToken);
-                    if (pullSuccess)
-                    {
-                        break;
-                    }
-                    excludeVersions[i] = unityVersion;
+                    break;
                 }
+                excludeVersions[i] = unityVersion;
             }
-
-            if (!pullSuccess)
-            {
-                ThrowHelper.ThrowFailPullDockerImage(dockerImage);
-            }
-
-            var resolvedFiles = new System.Collections.Concurrent.ConcurrentQueue<string>();
-
-            await Parallel.ForEachAsync(requests, cancellationToken, async (request, ct) =>
-            {
-                var success = await DockerHelper.RunMergeAsync(dockerImage, projectPath, request, ct);
-                if (success)
-                {
-                    resolvedFiles.Enqueue(request.Output);
-                }
-                // Note: We don't throw exception on failure to allow partial resolution
-            });
-
-            return resolvedFiles;
         }
-        catch (Exception e)
+
+        if (!pullSuccess)
         {
-            ThrowHelper.ThrowException(e);
-            return [];
+            ThrowHelper.ThrowFailPullDockerImage(dockerImage);
         }
+
+        var resolvedFiles = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        await Parallel.ForEachAsync(requests, cancellationToken, async (request, ct) =>
+        {
+            var success = await DockerHelper.RunMergeAsync(dockerImage, projectPath, request, ct);
+            if (success)
+            {
+                resolvedFiles.Enqueue(request.Output);
+            }
+            // Note: We don't throw exception on failure to allow partial resolution
+        });
+
+        return resolvedFiles;
     }
 
     private static string GetLocalUnityVersion(string projectPath)
@@ -98,16 +84,9 @@ public static class YamlMergeProcessor
             return;
         }
 
-        try
+        if (!await httpClient.CheckValidVersionAsync(unityVersion, cancellationToken: cancellationToken))
         {
-            if (!await httpClient.CheckValidVersionAsync(unityVersion, cancellationToken: cancellationToken))
-            {
-                ThrowHelper.ThrowInvalidUnityVersion(unityVersion);
-            }
-        }
-        catch (Exception e)
-        {
-            ThrowHelper.ThrowException(e);
+            ThrowHelper.ThrowInvalidUnityVersion(unityVersion);
         }
     }
 }

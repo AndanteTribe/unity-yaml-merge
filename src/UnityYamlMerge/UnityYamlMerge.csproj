@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -25,6 +25,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\UnityYamlMerge.Core\UnityYamlMerge.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ConsoleAppFramework" Version="5.7.13" />
     </ItemGroup>
 
 </Project>

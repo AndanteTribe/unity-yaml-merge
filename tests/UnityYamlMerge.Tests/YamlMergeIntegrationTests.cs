@@ -37,10 +37,6 @@ public class YamlMergeIntegrationTests : IDisposable
             throw new InvalidOperationException("Docker is not available. Please ensure Docker is installed and running.");
         }
 
-        using var envScope = new EnvironmentVariableScope();
-        envScope.Set(EnvironmentVariables.UnityVersionSource, "latest-lts");
-        envScope.Set(EnvironmentVariables.ProjectPath, _samplesDirectory);
-
         // Arrange
         var baseFile = Path.Combine(_samplesDirectory, "Assets", "_merge_base.unity");
         var oursFile = Path.Combine(_samplesDirectory, "Assets", "_merge_ours.unity");
@@ -58,7 +54,7 @@ public class YamlMergeIntegrationTests : IDisposable
         // Act
         try
         {
-            var resolvedFiles = await YamlMergeProcessor.StartAsync(requests);
+            var resolvedFiles = await YamlMergeProcessor.StartAsync(requests, CreateOptions());
 
             // Assert resolved files
             Assert.Single(resolvedFiles);
@@ -92,10 +88,6 @@ public class YamlMergeIntegrationTests : IDisposable
             throw new InvalidOperationException("Docker is not available. Please ensure Docker is installed and running.");
         }
 
-        using var envScope = new EnvironmentVariableScope();
-        envScope.Set(EnvironmentVariables.UnityVersionSource, "latest-lts");
-        envScope.Set(EnvironmentVariables.ProjectPath, _samplesDirectory);
-
         // Arrange
         var baseFile = Path.Combine(_samplesDirectory, "Assets", "_merge_base.unity");
         var oursFile = Path.Combine(_samplesDirectory, "Assets", "_merge_ours.unity");
@@ -110,7 +102,7 @@ public class YamlMergeIntegrationTests : IDisposable
         };
 
         // Act
-        var resolvedFiles = await YamlMergeProcessor.StartAsync(requests);
+        var resolvedFiles = await YamlMergeProcessor.StartAsync(requests, CreateOptions());
 
         // Assert resolved files
         Assert.Equal(2, resolvedFiles.Count);
@@ -139,10 +131,6 @@ public class YamlMergeIntegrationTests : IDisposable
             throw new InvalidOperationException("Docker is not available. Please ensure Docker is installed and running.");
         }
 
-        using var envScope = new EnvironmentVariableScope();
-        envScope.Set(EnvironmentVariables.UnityVersionSource, "latest-lts");
-        envScope.Set(EnvironmentVariables.ProjectPath, _samplesDirectory);
-
         // Arrange - Copy ours file to output directory so we can modify it
         var baseFile = Path.Combine(_samplesDirectory, "Assets", "_merge_base.unity");
         var oursFile = Path.Combine(_testOutputDirectory, "ours_to_overwrite.unity");
@@ -155,7 +143,7 @@ public class YamlMergeIntegrationTests : IDisposable
         var requests = new List<MergeRequest> { mergeRequest };
 
         // Act
-        var resolvedFiles = await YamlMergeProcessor.StartAsync(requests);
+        var resolvedFiles = await YamlMergeProcessor.StartAsync(requests, CreateOptions());
 
         // Assert resolved files
         Assert.Single(resolvedFiles);
@@ -218,29 +206,12 @@ public class YamlMergeIntegrationTests : IDisposable
         }
     }
 
-    /// <summary>
-    /// Helper to set environment variables in a scope and restore them on dispose.
-    /// This prevents environment variable pollution across tests.
-    /// </summary>
-    private sealed class EnvironmentVariableScope : IDisposable
+    private YamlMergeOptions CreateOptions()
     {
-        private readonly Dictionary<string, string?> _originalValues = new();
-
-        public void Set(string key, string value)
+        return new YamlMergeOptions
         {
-            if (!_originalValues.ContainsKey(key))
-            {
-                _originalValues[key] = Environment.GetEnvironmentVariable(key);
-            }
-            Environment.SetEnvironmentVariable(key, value);
-        }
-
-        public void Dispose()
-        {
-            foreach (var (key, originalValue) in _originalValues)
-            {
-                Environment.SetEnvironmentVariable(key, originalValue);
-            }
-        }
+            VersionSource = VersionSource.LatestLts,
+            ProjectPath = _samplesDirectory
+        };
     }
 }

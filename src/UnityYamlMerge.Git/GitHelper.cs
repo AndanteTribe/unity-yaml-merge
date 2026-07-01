@@ -25,7 +25,7 @@ public static class GitHelper
         }
     }
 
-    public static async ValueTask SetConfigUserAsync(string? gitUserEmail, string? gitUserName, CancellationToken cancellationToken = default)
+    public static async ValueTask SetConfigUserAsync(string gitUserEmail, string gitUserName, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(gitUserEmail) || string.IsNullOrWhiteSpace(gitUserName))
@@ -94,7 +94,7 @@ public static class GitHelper
             throw new InvalidOperationException("failed to get default branch.");
         }
 
-        // origin/main → main
+        // origin/main -> main
         const string prefix = "origin/";
         if (result.StartsWith(prefix, StringComparison.Ordinal))
         {
@@ -384,7 +384,7 @@ public static class GitHelper
     /// <summary>
     /// Executes git push.
     /// </summary>
-    public static async ValueTask PushAsync(string remote, string? refspec = null, CancellationToken cancellationToken = default)
+    public static async ValueTask PushAsync(string remote, string refspec = "", CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var processStartInfo = ProcessStartInfo.Create("git");
