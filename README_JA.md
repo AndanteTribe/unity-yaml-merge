@@ -1,9 +1,9 @@
 ﻿# Unity YAML Merge
 [![dotnet-test](https://github.com/AndanteTribe/unity-yaml-merge/actions/workflows/dotnet-test.yml/badge.svg)](https://github.com/AndanteTribe/unity-yaml-merge/actions/workflows/dotnet-test.yml)
 [![docker-publish](https://github.com/AndanteTribe/unity-yaml-merge/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/AndanteTribe/unity-yaml-merge/actions/workflows/docker-publish.yml)
-[![GitHub Actions Marketplace](https://img.shields.io/badge/GitHub%20Actions-Marketplace-blue)](https://github.com/marketplace/actions/unity-yaml-merge)
-[![Docker Hub: unity-yaml-merge](https://img.shields.io/docker/v/andantetribe/unity-yaml-merge?label=unity-yaml-merge&sort=semver)](https://hub.docker.com/r/andantetribe/unity-yaml-merge)
-[![Docker Hub: unity-yaml-merge-git](https://img.shields.io/docker/v/andantetribe/unity-yaml-merge-git?label=unity-yaml-merge-git&sort=semver)](https://hub.docker.com/r/andantetribe/unity-yaml-merge-git)
+[![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Marketplace-2088FF?logo=githubactions)](https://github.com/marketplace/actions/unity-yaml-merge)
+[![Docker Hub](https://img.shields.io/docker/v/andantetribe/unity-yaml-merge?label=Docker%20Hub&logo=docker&sort=semver)](https://hub.docker.com/r/andantetribe/unity-yaml-merge)
+[![Docker Hub](https://img.shields.io/docker/v/andantetribe/unity-yaml-merge-git?label=Docker%20Hub&logo=docker&sort=semver)](https://hub.docker.com/r/andantetribe/unity-yaml-merge-git)
 [![GitHub license](https://img.shields.io/github/license/AndanteTribe/unity-yaml-merge.svg)](./LICENSE)
 
 [English](README.md) | 日本語
